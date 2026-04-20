@@ -178,33 +178,36 @@
   <script>
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbzRub7uoRPz5aYpeW-BesCzNBIwn3s2xY2vpcPrn9F6uPV8a4orOo3npoa0GNVpHY1R/exec';
 
-    function verifierMembre() {
-      const numero = document.getElementById("numeroMembre").value;
-      document.getElementById("verificationMessage").innerText = "Vérification en cours...";
+   function verifierMembre() {
+  const numero = document.getElementById("numeroMembre").value.trim();
+  document.getElementById("verificationMessage").innerText = "Vérification en cours...";
 
-      fetch(`${scriptUrl}?action=verifierResultat&numeroMembre=${numero}`)
-        .then(response => response.json())
-        .then(data => {
-          const message = data.message;
-          document.getElementById("verificationMessage").innerText = message;
+  fetch(`${scriptUrl}?action=verifierResultat&numeroMembre=${encodeURIComponent(numero)}`)
+    .then(async (res) => {
+      const text = await res.text();
+      console.log("RAW:", text);
+      return JSON.parse(text);
+    })
+    .then(data => {
+      const message = (data.message || "").trim();
 
-          if (!message || message.trim() === "") {
-            document.getElementById("verificationMessage").innerText = "❌ Vous n'avez pas répondu à la question.";
-            document.getElementById("playButton").style.display = "none";
-          } else if (message.trim().includes("Correct")) {
-            localStorage.setItem("numeroMembre", numero);
-            document.getElementById("playButton").style.display = "inline-block";
-            document.querySelector("button").style.display = "none";
-            document.getElementById("numeroMembre").disabled = true;
-          } else {
-            document.getElementById("verificationMessage").innerText = "❌ Vous ne pouvez pas jouer.";
-            document.getElementById("playButton").style.display = "none";
-          }
-        })
-        .catch(() => {
-          document.getElementById("verificationMessage").innerText = "Erreur de connexion.";
-        });
-    }
+      if (!message) {
+        document.getElementById("verificationMessage").innerText = "❌ Vous n'avez pas répondu à la question.";
+        return;
+      }
+
+      if (message.includes("Correct")) {
+        localStorage.setItem("numeroMembre", numero);
+        window.location.href = "jeu2.html";
+      } else {
+        document.getElementById("verificationMessage").innerText = "❌ Vous ne pouvez pas jouer.";
+      }
+    })
+    .catch(err => {
+      console.log(err);
+      document.getElementById("verificationMessage").innerText = "Erreur de connexion (Apps Script)";
+    });
+}
 
     function lancerJeu() {
       window.location.href = 'jeu2.html';
